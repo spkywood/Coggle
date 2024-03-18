@@ -2,6 +2,5 @@
 
 ## Naive RAG
 
+## Advanced RAG
 
-
-## 建高级RAG系统

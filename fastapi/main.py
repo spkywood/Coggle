@@ -21,7 +21,7 @@ from loguru import logger
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any, TypedDict, cast
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Header
 from httpx import AsyncClient
 
 class State(TypedDict):
@@ -44,10 +44,31 @@ async def read_root():
 
 @app.get("/lifespan")
 async def read_root(request: Request) -> dict[str, Any]:
+    logger.info(request.headers)
     base_url = f"http://{request.client.host}:{request.url.port}"
     client = cast(AsyncClient, request.state.client)
     response = await client.get(base_url)
-    return response.json()
+    # return response.json()
+    return {'user-agent' : request.headers.get('user-agent')}
+
+@app.get("/items/")
+async def read_items(
+    user_agent: str = Header(None),
+    host: str = Header(None),
+    connection: str = Header(None),
+    accept: str = Header(None),
+    accept_language: str = Header(None),
+    accept_encoding: str = Header(None),
+):
+    return {
+        "user-agent": user_agent,
+        "host": host,
+        "connection": connection,
+        "accept": accept,
+        "accept-language": accept_language,
+        "accept-encoding": accept_encoding
+    }
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,8 +1,17 @@
 from enum import Enum
 from fastapi import FastAPI, Query, Body
 from typing import Annotated
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ModelName(str, Enum):
     alexnet = "alexnet"
@@ -84,6 +93,7 @@ async def update_item(item_id: int, item: Item, q: Union[str, None] = None):
 
 # 参数校验
 
+
 @app.post("/add_user")
 async def read_items(name: Annotated[str, Body()], 
                      passwd: Annotated[str, Body()], 
@@ -100,14 +110,21 @@ async def read_items(name: Annotated[str, Body()],
 import asyncio
 from sse_starlette.sse import EventSourceResponse
 
-async def event_generator():
+class ItemEvent(BaseModel):
+    name: str
+    age: int
+
+async def event_generator(name, age):
     # 模拟一个生成事件的异步任务
     for i in range(1, 11):
         # 生成一个事件消息
-        yield {
-            "event": "message",
-            "data": f"Message {i}"
-        }
+        import json
+        yield json.dumps(
+            {
+                "name": name,
+                "age": age
+            }, ensure_ascii=False
+        )
         """
         加sleep ,否则 sse_starlette.sse 中 listen_for_disconnect 
         收不到 http.disconnect 信号。这个表现是服务端的sse传输不会结束,
@@ -115,9 +132,9 @@ async def event_generator():
         """
         await asyncio.sleep(1)
 
-@app.get("/events")
-async def get_events():
-    return EventSourceResponse(event_generator())
+@app.post("/events")
+async def get_events(item: ItemEvent):
+    return EventSourceResponse(event_generator(name=item.name, age=item.age))
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE with Axios Example</title>
+</head>
+<body>
+    <h1>Server-Sent Events (SSE) with Axios Example</h1>
+    <p>Check the console for messages from the server.</p>
+
+    <script>
+        // 将异步操作包装在一个 async 函数中
+        async function fetchData() {
+            const data = '{"name": "test", "age": 10}';
+            
+            try {
+                const response = await fetch("http://localhost:6008/events", {
+                    method: "POST",
+                    body: data,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "text/event-stream",
+                        // "tk": localStorage.getItem("token"), // 如果需要 token，可以取消注释这一行
+                    },
+                });
+
+                const encode = new TextDecoder("utf-8");
+                const reader = response.body.getReader();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    const decodeText = encode.decode(value);
+
+                    // 输出 SSE 数据到控制台
+                    console.log('New message from SSE:', decodeText);
+
+                    // 在页面上显示消息
+                    const messageElement = document.createElement('p');
+                    messageElement.textContent = decodeText;
+                    document.body.appendChild(messageElement);
+
+                    // 读取结束
+                    if (done) {
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('Error from SSE:', error);
+            }
+        }
+
+        // 调用异步函数
+        fetchData();
+    </script>
+</body>
+</html>
